@@ -40,7 +40,7 @@ public class CameraControl : MonoBehaviour
         if (Input.GetAxis("RightStickVertical") != 0 )
         {
             if((Input.GetAxis("RightStickVertical")>0 && CameraHeightCore.transform.localRotation.x<.2f) || (Input.GetAxis("RightStickVertical") < 0 && CameraHeightCore.transform.localRotation.x > -.6f))
-            CameraHeightCore.transform.Rotate(Vector3.right * Time.deltaTime * CameraRotationSpeed * Input.GetAxis("RightStickVertical"));
+            CameraHeightCore.transform.Rotate(Vector3.right * Time.deltaTime * CameraRotationSpeed * -Input.GetAxis("RightStickVertical"));
         }
 
         if(Input.GetAxis("LeftStickVertical") != 0)
@@ -56,8 +56,26 @@ public class CameraControl : MonoBehaviour
 
         if(m_IsTraveling)
         {
-            float moveStep = 100 * Time.deltaTime;
-            PlayerAnchor.transform.position = Vector3.MoveTowards(PlayerAnchor.transform.position, m_TravelTarget.transform.position, moveStep);
+            float moveStep = m_GravConst * Time.deltaTime;
+            Transform rootTrans = m_TravelTarget.transform.root;
+            float grabObjectMass = rootTrans.GetComponent<GrabableMass>().ObjectMass;
+
+            float distance = Vector3.Distance(rootTrans.position, PlayerAnchor.transform.position);
+            //distance = distance > 1.0f ? 1 : distance;
+
+            float tempStep = grabObjectMass / (m_CharMass + grabObjectMass);
+            tempStep = tempStep < m_StepEPS ? 0 : tempStep;
+            float stepDistancePlayer = moveStep * tempStep / (distance * distance);
+
+            tempStep = m_CharMass / (m_CharMass + grabObjectMass);
+            tempStep = tempStep < m_StepEPS ? 0 : tempStep;
+            float stepDistanceObject = moveStep * tempStep / (distance * distance);
+            Debug.Log("Distance: " + distance);
+            Debug.Log("Object step: " + stepDistanceObject);
+            Debug.Log("Player step: " + stepDistancePlayer);
+
+            PlayerAnchor.transform.position = Vector3.MoveTowards(PlayerAnchor.transform.position, rootTrans.position, stepDistancePlayer);
+            rootTrans.position = Vector3.MoveTowards(rootTrans.position, PlayerAnchor.transform.position, stepDistanceObject);
 
             if(Vector3.Distance(PlayerAnchor.transform.position, m_TravelTarget.transform.position)<10f)
             {
@@ -116,13 +134,26 @@ public class CameraControl : MonoBehaviour
         m_TravelTarget = target;
     }
 
+    [SerializeField]
     private Vector3 CameraPosition;
-
+    [SerializeField]
     private float m_CameraRotationValue;
-
+    [SerializeField]
     private bool m_IsMoving;
+    [SerializeField]
     private bool m_IsTraveling;
+    [SerializeField]
     private GameObject m_TravelTarget;
 
+    [SerializeField]
     private float m_TempGravHolder;
+
+    [SerializeField]
+    private float m_CharMass = 1000.0f;
+
+    [SerializeField]
+    private float m_GravConst = 100.0f;
+
+    [SerializeField]
+    private float m_StepEPS = 1 / 10.0f;
 }
