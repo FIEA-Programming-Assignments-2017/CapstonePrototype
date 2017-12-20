@@ -61,7 +61,6 @@ public class CameraControl : MonoBehaviour
             float grabObjectMass = rootTrans.GetComponent<GrabableMass>().ObjectMass;
 
             float distance = Vector3.Distance(rootTrans.position, PlayerAnchor.transform.position);
-            //distance = distance > 1.0f ? 1 : distance;
 
             float tempStep = grabObjectMass / (m_CharMass + grabObjectMass);
             tempStep = tempStep < m_StepEPS ? 0 : tempStep;
