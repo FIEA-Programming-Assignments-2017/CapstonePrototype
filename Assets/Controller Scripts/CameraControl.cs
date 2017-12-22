@@ -88,6 +88,41 @@ public class CameraControl : MonoBehaviour
                 return;
             }
         }
+
+        if (m_PushObject)
+        {
+            float moveStep = m_GravConst * Time.deltaTime;
+            Transform rootTrans = m_TravelTarget.transform.root;
+            float grabObjectMass = rootTrans.GetComponent<GrabableMass>().ObjectMass;
+
+            float distance = Vector3.Distance(rootTrans.position, PlayerAnchor.transform.position);
+
+            float tempStep = grabObjectMass / (m_CharMass + grabObjectMass);
+            tempStep = tempStep < m_StepEPS ? 0 : tempStep;
+            float stepDistancePlayer = moveStep * tempStep / (distance * distance);
+
+            tempStep = m_CharMass / (m_CharMass + grabObjectMass);
+            tempStep = tempStep < m_StepEPS ? 0 : tempStep;
+            float stepDistanceObject = moveStep * tempStep / (distance * distance);
+            Debug.Log("Distance: " + distance);
+            Debug.Log("Object step: " + stepDistanceObject);
+            Debug.Log("Player step: " + stepDistancePlayer);
+
+            PlayerAnchor.transform.position = Vector3.MoveTowards(PlayerAnchor.transform.position, rootTrans.position, -stepDistancePlayer);
+            rootTrans.position = Vector3.MoveTowards(rootTrans.position, PlayerAnchor.transform.position, -stepDistanceObject);
+
+            if (Vector3.Distance(PlayerAnchor.transform.position, m_TravelTarget.transform.position) > 60f)
+            {
+                m_PushObject = false;
+                PlayerAnchor.GetComponent<Rigidbody>().velocity = new Vector3(0, 0, 0);
+                PlayerAnchor.GetComponent<Rigidbody>().AddForce(Vector3.up * JumpHeight / 2, ForceMode.Impulse);
+                GravityScale = m_TempGravHolder;
+            }
+            else
+            {
+                return;
+            }
+        }
         /*
         Vector3 DirectionVector = new Vector3(Input.GetAxis("LeftStickVertical"), 0, Input.GetAxis("LeftStickHorizontal"));
         float step = CameraRotationSpeed * Time.deltaTime;
@@ -133,6 +168,16 @@ public class CameraControl : MonoBehaviour
         m_TravelTarget = target;
     }
 
+
+    public void PushTo(GameObject target)
+    {
+        m_TempGravHolder = GravityScale;
+        GravityScale = 0;
+
+        m_PushObject = true;
+        m_TravelTarget = target;
+    }
+
     [SerializeField]
     private Vector3 CameraPosition;
     [SerializeField]
@@ -141,6 +186,8 @@ public class CameraControl : MonoBehaviour
     private bool m_IsMoving;
     [SerializeField]
     private bool m_IsTraveling;
+    [SerializeField]
+    private bool m_PushObject;
     [SerializeField]
     private GameObject m_TravelTarget;
 

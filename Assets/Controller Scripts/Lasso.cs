@@ -23,6 +23,10 @@ public class Lasso : MonoBehaviour
             {
                 Player.TravelTo(ActiveReticle);
             }
+            if (Input.GetButtonDown("LassoPull"))
+            {
+                Player.PushTo(ActiveReticle);
+            }
         }
 	}
 
